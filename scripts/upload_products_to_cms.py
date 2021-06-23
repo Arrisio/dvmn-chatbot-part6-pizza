@@ -1,9 +1,7 @@
 import asyncio
-import sys
+from sys import platform
 import httpx
-import anyio
 
-from loguru import logger
 import moltin_api
 
 async def main():
@@ -20,14 +18,8 @@ async def main():
 
 
 if __name__ == '__main__':
-    logger.configure(**{
-        "handlers": [
-            {
-                "sink": sys.stdout,
-                "level": "DEBUG",
-                "format": "<level>{level: <8} {time:YYYY-MM-DD HH:mm:ss.SSS}</level>|<cyan>{name:<12}</cyan>:<cyan>{function:<24}</cyan>:<cyan>{line}</cyan> - <level>{message:>32}</level> |{extra}",
-            },
-        ],
-    })
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    if platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+    # Не работает, т.к. Moltin всегда возвращает 403 ошибку
+    asyncio.run(main())
