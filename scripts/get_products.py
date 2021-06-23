@@ -2,16 +2,17 @@ import asyncio
 import sys
 
 import anyio
-from services import get_product_list
+from services import get_pizza_list
 from loguru import logger
 
 async def main():
-    product_list = await get_product_list()
+    product_list = await get_pizza_list()
     print(product_list)
     # print(product_list[0].get_image_link())
     # print(await product_list[0].get_image_link())
     # print(await product_list[0].get_image_link())
     logger.debug('start image1')
+    print(product_list[0].image_link)
     print(await product_list[0].image_link)
     logger.debug('fimish image1')
     logger.debug('start image2')

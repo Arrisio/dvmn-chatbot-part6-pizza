@@ -24,7 +24,10 @@ class Settings(BaseSettings):
 
     LOG_LEVEL: str = "DEBUG"
 
-    MAX_BUTTONS_IN_ROW: int = 5
+    PAYMENT_PROVIDER_TOKEN: str
+    YANDEX_GEOCODER_APIKEY: str
+    COURIER_TG_ID: int
+    MAX_BUTTONS_IN_ROW: int = 4
 
     class Config:
         env_file: str = ".env"

@@ -2,7 +2,6 @@ import asyncio
 import sys
 import httpx
 import anyio
-from services import get_product_list
 
 from loguru import logger
 import moltin_api

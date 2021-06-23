@@ -1,34 +1,58 @@
-from typing import Optional, Union
 from dataclasses import dataclass
-import anyio
-import asyncio
-from async_property import async_cached_property, AwaitLoader
-from pydantic import BaseModel, HttpUrl, UUID4, PrivateAttr
-from uuid import uuid4
-from loguru import logger
+from enum import Enum
 
-import moltin_api
+import geopy
+
 
 @dataclass
-class Product(AwaitLoader):
-    id: Union[int, str]
+class Pizza:
+    id: str
     name: str
     description: str
     price: float
     display_price: str
-    moltin_id: uuid4 = None
 
-    _moltin_product_data: dict = None
+    _image_file_id: str
+    _image_file_link: str = None
 
 
-    @async_cached_property
-    async def image_link(self) -> str:
-        logger.debug('downloading image')
-        return await moltin_api.get_product_main_image_link(self._moltin_product_data)
+@dataclass
+class Pizzeria:
+    alias: str
+    location: geopy.Location
 
-        # loop.a
-        # with anyio.create_task_group() as tg:
-        #     r = tg.r
-        # return r
 
+@dataclass
+class PizzaCartItem:
+    id: str
+    pizza_id: str
+    name: str
+    description: str
+    cost: float
+    display_cost: str
+    quantity: int
+    unit_price: float
+    image_file_link: str
+
+
+@dataclass
+class Cart:
+    user_id: str
+    pizza_cart_items: list[PizzaCartItem]
+    price: float
+    display_price: str
+
+
+class DeliveryType(Enum):
+    PICKUP = "PICKUP"
+    FREE_COURIER_DELIVERY = "FREE_COURIER_DELIVERY"
+    COURIER_DELIVERY_FOR_100 = "COURIER_DELIVERY_FOR_100"
+    COURIER_DELIVERY_FOR_300 = "COURIER_DELIVERY_FOR_300"
+
+
+@dataclass
+class Delivery:
+    type: DeliveryType
+    name: str
+    price: float
 

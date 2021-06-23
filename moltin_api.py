@@ -1,9 +1,10 @@
 import logging
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 import httpx
 
+from schemas import Pizza as Product, PizzaCartItem as CartItem, Cart
 from settings import MoltinSettings
 
 # наличие всех параметров MoltenSettings обязательно для работы этого модуля. Поэтому считаю оправданным объявлени settings в этом месте
@@ -16,7 +17,6 @@ MOLTIN_SESSION: httpx.AsyncClient = httpx.AsyncClient(http2=True, base_url=setti
 
 
 async def refresh_auth_data():
-    logger.debug("trying to refresh molten auth data")
     global MOLTIN_AUTH_DATA
     response = await MOLTIN_SESSION.post(
         url="/oauth/access_token",
@@ -51,7 +51,7 @@ class MoltenAuth(httpx.Auth):
 
 async def create_product(
     name: str,
-    price: float ,
+    price: float,
     description: str,
     sku: Optional[str] = None,
     slug: Optional[str] = None,
@@ -60,7 +60,7 @@ async def create_product(
     status: Optional[str] = "live",
 ):
     """
-        https://documentation.elasticpath.com/commerce-cloud/docs/api/catalog/products/create-a-product.html
+    https://documentation.elasticpath.com/commerce-cloud/docs/api/catalog/products/create-a-product.html
     """
 
     response = await MOLTIN_SESSION.post(
@@ -75,13 +75,7 @@ async def create_product(
             "status": status,
             "commodity_type": commodity_type,
             "mange_stock": mange_stock,
-            "price": [
-                {
-                    "amount": price,
-                    "currency": "RUB",
-                    "includes_tax": True
-                }
-            ]
+            "price": [{"amount": price, "currency": "RUB", "includes_tax": True}],
         },
     )
     response.raise_for_status()
@@ -89,7 +83,7 @@ async def create_product(
     return response.json()["data"]
 
 
-async def get_product_list() -> list[dict]:
+async def get_product_list() -> list[Product]:
     response = await MOLTIN_SESSION.get(
         f"/v2/products",
         auth=MoltenAuth(),
@@ -99,22 +93,40 @@ async def get_product_list() -> list[dict]:
     """
     logger.debug("product list received")
     return [
-        {
-            "id": product["sku"],
-            "moltin_id": product["id"],
-            "name": product["name"],
-            "description": product["description"],
-            "price": product["price"][0]["amount"],
-            "display_price": product["meta"]["display_price"]["with_tax"]["formatted"],
-            "_moltin_product_data": product,
-        }
+        Product(
+            id=product["id"],
+            name=product["name"],
+            description=product["description"],
+            price=product["price"][0]["amount"],
+            display_price=product["meta"]["display_price"]["with_tax"]["formatted"],
+            _image_file_id=product["relationships"].get("main_image", {}).get("data", {}).get("id"),
+        )
         for product in response.json()["data"]
     ]
 
 
-async def get_product_main_image_link(product: dict) -> str:
-    main_image_id = product["relationships"]["main_image"]["data"]["id"]
+async def get_product_details(product_id: str) -> Product:
+    response = await MOLTIN_SESSION.get(
+        f"/v2/products/{product_id}",
+        auth=MoltenAuth(),
+    )
+    """
+        https://documentation.elasticpath.com/commerce-cloud/docs/api/catalog/products/get-all-products.html
+    """
+    logger.debug("product list received")
+    response.raise_for_status()
+    product = response.json()["data"]
+    return Product(
+        id=product["id"],
+        name=product["name"],
+        description=product["description"],
+        price=product["price"][0]["amount"],
+        display_price=product["meta"]["display_price"]["with_tax"]["formatted"],
+        _image_file_id=product["relationships"].get("main_image", {}).get("data", {}).get("id"),
+    )
 
+
+async def get_product_main_image_link(main_image_id: str) -> str:
     response = await MOLTIN_SESSION.get(
         url=f"https://api.moltin.com/v2/files/{main_image_id}",
         auth=MoltenAuth(),
@@ -141,22 +153,33 @@ async def add_product_item_to_cart(user_id: str, product_id: str):
         raise AddToCartException
 
 
-async def get_cart_items(user_id: str):
+async def get_cart_items(user_id: str) -> Cart:
     response = await MOLTIN_SESSION.get(
         f"/v2/carts/{user_id}/items",
         auth=MoltenAuth(),
     )
     response.raise_for_status()
-    return response.json()["data"]
 
-
-async def get_cart_price(user_id: str) -> str:
-    response = await MOLTIN_SESSION.get(
-        f"/v2/carts/{user_id}",
-        auth=MoltenAuth(),
+    result = response.json()
+    return Cart(
+        user_id=user_id,
+        display_price=result["meta"]["display_price"]["with_tax"]["formatted"],
+        price=result["meta"]["display_price"]["with_tax"]["amount"],
+        pizza_cart_items=[
+            CartItem(
+                id=item["id"],
+                pizza_id=item["product_id"],
+                description=item["description"],
+                quantity=item["quantity"],
+                cost=item["value"]["amount"],
+                display_cost=item["meta"]["display_price"]["with_tax"]["value"]["formatted"],
+                unit_price=item["unit_price"]["amount"],
+                name=item["name"],
+                image_file_link=item.get("image", {}).get("href"),
+            )
+            for item in result["data"]
+        ],
     )
-    response.raise_for_status()
-    return response.json()["data"]["meta"]["display_price"]["with_tax"]["formatted"]
 
 
 async def remove_item_from_cart(user_id: str, item_id: str):
@@ -189,3 +212,9 @@ async def create_customer(customer_id: str, customer_name: str, customer_email: 
     except httpx.HTTPStatusError as err:
         logger.error(err)
         raise CreateCustomerException
+
+
+async def get_flow_entries(flow_slug) -> List[dict]:
+    response = await MOLTIN_SESSION.get(url=f"/v2/flows/{flow_slug}/entries", auth=MoltenAuth())
+    response.raise_for_status()
+    return response.json()["data"]
