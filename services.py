@@ -7,14 +7,6 @@ from schemas import Pizza, Pizzeria, Cart, Delivery, DeliveryType
 from settings import Settings
 
 
-# async def get_pizza_list() -> list[Pizza]:
-#     return await moltin_api.get_product_list()
-
-
-# async def get_pizza(pizza_id: str) -> Pizza:
-#     return await moltin_api.get_product_details(product_id=pizza_id)
-
-
 async def get_image_file_link(pizza: Pizza) -> Optional[str]:
     if not pizza._image_file_id:
         return
@@ -23,18 +15,6 @@ async def get_image_file_link(pizza: Pizza) -> Optional[str]:
         pizza._image_file_link = await moltin_api.get_product_main_image_link(pizza._image_file_id)
 
     return pizza._image_file_link
-
-
-# async def add_pizza_to_cart(user_id, pizza_id):
-#     await moltin_api.add_product_item_to_cart(user_id=user_id, product_id=pizza_id)
-
-
-# async def remove_pizza_item_from_cart(user_id, pizza_item_id):
-#     await moltin_api.remove_item_from_cart(user_id=user_id, item_id=pizza_item_id)
-
-
-# async def get_cart(user_id) -> Cart:
-#     return await moltin_api.get_cart_items(user_id=user_id)
 
 
 async def get_pizzeria_list():
