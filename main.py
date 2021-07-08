@@ -69,7 +69,7 @@ async def show_pizza_list(message: types.Message):
                             text=pizza.name,
                             callback_data=cb_show_product_details.new(pizza_id=pizza.id),
                         )
-                        for pizza in await services.get_pizza_list()
+                        for pizza in await moltin_api.get_product_list()
                     ],
                     settings.MAX_BUTTONS_IN_ROW,
                 )
@@ -93,7 +93,7 @@ async def show_pizza_list_cb(call: CallbackQuery, state: FSMContext):
 
 @dp.callback_query_handler(cb_show_product_details.filter())
 async def show_pizza_details(call: CallbackQuery, callback_data: dict, state: FSMContext):
-    pizza = await services.get_pizza(callback_data["pizza_id"])
+    pizza = await moltin_api.get_product_details(product_id=callback_data["pizza_id"])
 
     await call.message.answer_photo(
         photo=await services.get_image_file_link(pizza),
@@ -118,7 +118,7 @@ async def show_pizza_details(call: CallbackQuery, callback_data: dict, state: FS
 @dp.callback_query_handler(cb_add_to_cart.filter())
 async def add_to_cart(call: CallbackQuery, callback_data: dict):
     try:
-        await services.add_pizza_to_cart(user_id=call.from_user.id, pizza_id=callback_data["pizza_id"])
+        await moltin_api.add_product_item_to_cart(user_id=call.from_user.id, product_id=callback_data["pizza_id"])
         await call.message.answer("Пицца добавлена!")
         await show_pizza_list(message=call.message)
     except moltin_api.AddToCartException:
@@ -131,7 +131,7 @@ async def add_to_cart(call: CallbackQuery, callback_data: dict):
 
 @dp.callback_query_handler(text=cb_goto_cart)
 async def show_cart_items(call: CallbackQuery):
-    cart = await services.get_cart(user_id=call.from_user.id)
+    cart = await moltin_api.get_cart_items(user_id=call.from_user.id)
 
     cart_items_description = "\n".join(
         [
@@ -174,7 +174,7 @@ async def remove_pizza_item_from_cart(
     call: CallbackQuery,
     callback_data: dict,
 ):
-    await services.remove_pizza_item_from_cart(user_id=call.from_user.id, pizza_item_id=callback_data["pizza_item_id"])
+    await moltin_api.remove_item_from_cart(user_id=call.from_user.id, item_id=callback_data["pizza_item_id"])
     await call.message.answer("Пиццу убрали из корзины")
     await call.answer()
 
@@ -262,7 +262,7 @@ async def send_invoice(
         await state.finish()
         return
 
-    cart = await services.get_cart(user_id=call.from_user.id)
+    cart = await moltin_api.get_cart_items(user_id=call.from_user.id)
     prices = [
         LabeledPrice(label=pizza_item.name, amount=int(pizza_item.cost * 100)) for pizza_item in cart.pizza_cart_items
     ]

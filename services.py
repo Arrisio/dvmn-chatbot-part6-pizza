@@ -7,12 +7,12 @@ from schemas import Pizza, Pizzeria, Cart, Delivery, DeliveryType
 from settings import Settings
 
 
-async def get_pizza_list() -> list[Pizza]:
-    return await moltin_api.get_product_list()
+# async def get_pizza_list() -> list[Pizza]:
+#     return await moltin_api.get_product_list()
 
 
-async def get_pizza(pizza_id: str) -> Pizza:
-    return await moltin_api.get_product_details(product_id=pizza_id)
+# async def get_pizza(pizza_id: str) -> Pizza:
+#     return await moltin_api.get_product_details(product_id=pizza_id)
 
 
 async def get_image_file_link(pizza: Pizza) -> Optional[str]:
@@ -25,20 +25,20 @@ async def get_image_file_link(pizza: Pizza) -> Optional[str]:
     return pizza._image_file_link
 
 
-async def add_pizza_to_cart(user_id, pizza_id):
-    await moltin_api.add_product_item_to_cart(user_id=user_id, product_id=pizza_id)
+# async def add_pizza_to_cart(user_id, pizza_id):
+#     await moltin_api.add_product_item_to_cart(user_id=user_id, product_id=pizza_id)
 
 
-async def remove_pizza_item_from_cart(user_id, pizza_item_id):
-    await moltin_api.remove_item_from_cart(user_id=user_id, item_id=pizza_item_id)
+# async def remove_pizza_item_from_cart(user_id, pizza_item_id):
+#     await moltin_api.remove_item_from_cart(user_id=user_id, item_id=pizza_item_id)
 
 
-async def get_cart(user_id) -> Cart:
-    return await moltin_api.get_cart_items(user_id=user_id)
+# async def get_cart(user_id) -> Cart:
+#     return await moltin_api.get_cart_items(user_id=user_id)
 
 
 async def get_pizzeria_list():
-    pizzeria_entries_list = await moltin_api.get_flow_entries(flow_slug="pizzeria")
+    pizzeria_entries = await moltin_api.get_flow_entries(flow_slug="pizzeria")
     return [
         Pizzeria(
             alias=pizzeria["Alias"],
@@ -48,7 +48,7 @@ async def get_pizzeria_list():
                 raw="",
             ),
         )
-        for pizzeria in pizzeria_entries_list
+        for pizzeria in pizzeria_entries
     ]
 
 
