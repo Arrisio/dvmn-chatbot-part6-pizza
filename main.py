@@ -5,7 +5,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from geopy import Point
 
 from schemas import DeliveryType
-from services import DELIVERY_VARIANTS
+from delivery_tools import DELIVERY_VARIANTS
 
 from aiogram import Dispatcher, Bot, types
 from aiogram.contrib.fsm_storage.redis import RedisStorage2
@@ -22,7 +22,7 @@ from aiogram.utils.callback_data import CallbackData
 from more_itertools import chunked
 
 import moltin_api
-import services
+import delivery_tools
 from settings import Settings
 
 
@@ -189,10 +189,10 @@ async def request_customer_coordinates(
 
 @dp.message_handler(content_types=types.ContentType.LOCATION, state=OrderState.WAITING_ADDRESS)
 async def handle_incoming_coordinates(message: types.Message, state: FSMContext):
-    nearest_pizzeria, distance = await services.get_nearest_pizzeria_and_distance(
+    nearest_pizzeria, distance = await delivery_tools.get_nearest_pizzeria_and_distance(
         point=Point(latitude=message.location.latitude, longitude=message.location.longitude)
     )
-    variants = services.get_delivery_variants(delivery_distance=distance)
+    variants = delivery_tools.get_delivery_variants(delivery_distance=distance)
     await message.answer(
         "выберите вариант доставки",
         reply_markup=InlineKeyboardMarkup(
@@ -213,11 +213,11 @@ async def handle_incoming_coordinates(message: types.Message, state: FSMContext)
 @dp.message_handler(state=OrderState.WAITING_ADDRESS)
 async def handle_incoming_address(message: types.Message, state: FSMContext):
 
-    if not (customer_location := services.get_location_by_address_string(address_string=message.text)):
+    if not (customer_location := delivery_tools.get_location_by_address_string(address_string=message.text)):
         await message.answer("не могу найти локацию")
         return
 
-    nearest_pizzeria, distance = await services.get_nearest_pizzeria_and_distance(point=customer_location.point)
+    nearest_pizzeria, distance = await delivery_tools.get_nearest_pizzeria_and_distance(point=customer_location.point)
 
     await state.update_data(
         pizzeria_address=nearest_pizzeria.location.address,
@@ -226,7 +226,7 @@ async def handle_incoming_address(message: types.Message, state: FSMContext):
     )
     await OrderState.next()
 
-    variants = services.get_delivery_variants(delivery_distance=distance)
+    variants = delivery_tools.get_delivery_variants(delivery_distance=distance)
     await message.answer(
         "выберите вариант доставки",
         reply_markup=InlineKeyboardMarkup(

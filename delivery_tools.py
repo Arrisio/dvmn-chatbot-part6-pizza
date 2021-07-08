@@ -1,9 +1,7 @@
-from typing import Optional
-
 from geopy import Location, Point, distance, geocoders
 
 import moltin_api
-from schemas import Pizza, Pizzeria, Cart, Delivery, DeliveryType
+from schemas import Pizzeria, Delivery, DeliveryType
 from settings import Settings
 
 
