@@ -54,6 +54,10 @@ cb_delivery_type = CallbackData(
 )
 
 
+def escape_spec_characters(text: str) -> str:
+    return text.replace(">", "&#62;").replace("<", "&#60")
+
+
 async def show_pizza_list(message: types.Message):
     await message.answer(
         "Список товаров",
@@ -93,7 +97,7 @@ async def show_pizza_details(call: CallbackQuery, callback_data: dict, state: FS
 
     await call.message.answer_photo(
         photo=await services.get_image_file_link(pizza),
-        caption=f"""<b>{pizza.name}</b>\nЦена: {pizza.display_price}\n<i>{pizza.description}</i>""",
+        caption=escape_spec_characters(f"<b>{pizza.name}</b>\nЦена: {pizza.display_price}\n<i>{pizza.description}</i>"),
         reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[
                 [
@@ -131,7 +135,9 @@ async def show_cart_items(call: CallbackQuery):
 
     cart_items_description = "\n".join(
         [
-            f"""<b>{pizza.name}</b>\nКоличество: {pizza.description}\n{pizza.quantity} в корзине на сумму {pizza.display_cost}"""
+            escape_spec_characters(
+                f"<b>{pizza.name}</b>\nКоличество: {pizza.description}\n{pizza.quantity} в корзине на сумму {pizza.display_cost}"
+            )
             for pizza in cart.pizza_cart_items
         ]
     )
@@ -250,7 +256,9 @@ async def send_invoice(
     delivery_type = DELIVERY_VARIANTS[callback_data.get("delivery_type")]
     data = await state.get_data()
     if delivery_type.type == DeliveryType.PICKUP.value:
-        await call.message.answer(f"Вы можете забрать пиццу самостоятельно по адресу\n{data['pizzeria_address']}")
+        await call.message.answer(
+            escape_spec_characters(f"Вы можете забрать пиццу самостоятельно по адресу\n{data['pizzeria_address']}")
+        )
         await state.finish()
         return
 
