@@ -119,7 +119,7 @@ async def show_pizza_details(call: CallbackQuery, callback_data: dict, state: FS
 async def add_to_cart(call: CallbackQuery, callback_data: dict):
     try:
         await services.add_pizza_to_cart(user_id=call.from_user.id, pizza_id=callback_data["pizza_id"])
-        await call.message.answer("Пица добавлена!")
+        await call.message.answer("Пицца добавлена!")
         await show_pizza_list(message=call.message)
     except moltin_api.AddToCartException:
         await call.message.answer(
