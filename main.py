@@ -62,8 +62,8 @@ async def show_pizza_list(message: types.Message):
     await message.answer(
         "Список товаров",
         reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=list(
-                chunked(
+            inline_keyboard=[
+                *chunked(
                     [
                         InlineKeyboardButton(
                             text=pizza.name,
@@ -72,9 +72,9 @@ async def show_pizza_list(message: types.Message):
                         for pizza in await moltin_api.get_product_list()
                     ],
                     settings.MAX_BUTTONS_IN_ROW,
-                )
-            )
-            + [[InlineKeyboardButton(text="Корзина", callback_data=cb_goto_cart)]],
+                ),
+                [InlineKeyboardButton(text="Корзина", callback_data=cb_goto_cart)],
+            ],
         ),
     )
 
@@ -96,7 +96,7 @@ async def show_pizza_details(call: CallbackQuery, callback_data: dict, state: FS
     pizza = await moltin_api.get_product_details(product_id=callback_data["pizza_id"])
 
     await call.message.answer_photo(
-        photo=await services.get_image_file_link(pizza),
+        photo=await moltin_api.get_product_main_image_link(pizza.image_file_id),
         caption=escape_spec_characters(f"<b>{pizza.name}</b>\nЦена: {pizza.display_price}\n<i>{pizza.description}</i>"),
         reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[
@@ -146,8 +146,8 @@ async def show_cart_items(call: CallbackQuery):
     await call.message.answer(
         cart_items_description,
         reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=list(
-                chunked(
+            inline_keyboard=[
+                *chunked(
                     [
                         InlineKeyboardButton(
                             text=f"Убрать из корзины {pizza_item.name}",
@@ -156,14 +156,12 @@ async def show_cart_items(call: CallbackQuery):
                         for pizza_item in cart.pizza_cart_items
                     ],
                     settings.MAX_BUTTONS_IN_ROW,
-                )
-            )
-            + [
+                ),
                 [
                     InlineKeyboardButton(text="В меню", callback_data=cb_goto_main_menu),
                     InlineKeyboardButton(text="Оплатить", callback_data=cb_request_coordinates),
-                ]
-            ],
+                ],
+            ]
         ),
     )
     await call.answer()
@@ -253,7 +251,12 @@ async def send_invoice(
 ):
     await call.answer()
 
-    delivery_type = DELIVERY_VARIANTS[callback_data.get("delivery_type")]
+    try:
+        delivery_type = DELIVERY_VARIANTS[callback_data.get("delivery_type")]
+    except KeyError:
+        await call.message.answer('Ошибка получения варианта доставки. Попробуйте снова')
+        return
+
     data = await state.get_data()
     if delivery_type.type == DeliveryType.PICKUP.value:
         await call.message.answer(

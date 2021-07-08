@@ -7,16 +7,6 @@ from schemas import Pizza, Pizzeria, Cart, Delivery, DeliveryType
 from settings import Settings
 
 
-async def get_image_file_link(pizza: Pizza) -> Optional[str]:
-    if not pizza._image_file_id:
-        return
-
-    if not pizza._image_file_link:
-        pizza._image_file_link = await moltin_api.get_product_main_image_link(pizza._image_file_id)
-
-    return pizza._image_file_link
-
-
 async def get_pizzeria_list():
     pizzeria_entries = await moltin_api.get_flow_entries(flow_slug="pizzeria")
     return [

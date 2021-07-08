@@ -12,8 +12,7 @@ class Pizza:
     price: float
     display_price: str
 
-    _image_file_id: str
-    _image_file_link: str = None
+    image_file_id: str
 
 
 @dataclass
