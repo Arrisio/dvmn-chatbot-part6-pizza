@@ -26,6 +26,14 @@ import delivery_tools
 from settings import Settings
 
 
+def format_tg_message(message_template: str, **kwarg) -> str:
+    for param_name, param_value in kwarg.items():
+        message_template = message_template.replace(
+            "{" + param_name + "}", str(param_value).replace(">", "&#62;").replace("<", "&#60")
+        )
+    return message_template
+
+
 # settings объявляется здесь, т.к. требуется для создания объектов bot и dp, которые нужны для регистрации хандлеров
 settings = Settings()
 bot = Bot(settings.TG_BOT_TOKEN, parse_mode=types.ParseMode.HTML)
@@ -52,10 +60,6 @@ cb_delivery_type = CallbackData(
     "cb_delivery_type",
     "delivery_type",
 )
-
-
-def escape_spec_characters(text: str) -> str:
-    return text.replace(">", "&#62;").replace("<", "&#60")
 
 
 async def show_pizza_list(message: types.Message):
@@ -97,7 +101,12 @@ async def show_pizza_details(call: CallbackQuery, callback_data: dict, state: FS
 
     await call.message.answer_photo(
         photo=await moltin_api.get_product_main_image_link(pizza.image_file_id),
-        caption=escape_spec_characters(f"<b>{pizza.name}</b>\nЦена: {pizza.display_price}\n<i>{pizza.description}</i>"),
+        caption=format_tg_message(
+            "<b>{pizza_name}</b>\nЦена: {pizza_display_price}\n<i>{pizza_description}</i>",
+            pizza_name=pizza.name,
+            pizza_display_price=pizza.display_price,
+            pizza_description=pizza.description,
+        ),
         reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[
                 [
@@ -135,8 +144,12 @@ async def show_cart_items(call: CallbackQuery):
 
     cart_items_description = "\n".join(
         [
-            escape_spec_characters(
-                f"<b>{pizza.name}</b>\nКоличество: {pizza.description}\n{pizza.quantity} в корзине на сумму {pizza.display_cost}"
+            format_tg_message(
+                "<b>{pizza_name}</b>\nКоличество: {pizza_description}\n{pizza_quantity} в корзине на сумму {pizza_display_cost}",
+                pizza_name=pizza.name,
+                pizza_description=pizza.description,
+                pizza_quantity=pizza.quantity,
+                pizza_display_cost=pizza.display_cost,
             )
             for pizza in cart.pizza_cart_items
         ]
@@ -254,13 +267,16 @@ async def send_invoice(
     try:
         delivery_type = DELIVERY_VARIANTS[callback_data.get("delivery_type")]
     except KeyError:
-        await call.message.answer('Ошибка получения варианта доставки. Попробуйте снова')
+        await call.message.answer("Ошибка получения варианта доставки. Попробуйте снова")
         return
 
     data = await state.get_data()
     if delivery_type.type == DeliveryType.PICKUP.value:
         await call.message.answer(
-            escape_spec_characters(f"Вы можете забрать пиццу самостоятельно по адресу\n{data['pizzeria_address']}")
+            format_tg_message(
+                "Вы можете забрать пиццу самостоятельно по адресу\n{pizzeria_address}",
+                pizzeria_address=data["pizzeria_address"],
+            )
         )
         await state.finish()
         return

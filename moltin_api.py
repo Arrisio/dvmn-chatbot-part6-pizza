@@ -99,7 +99,7 @@ async def get_product_list() -> list[Product]:
             description=product["description"],
             price=product["price"][0]["amount"],
             display_price=product["meta"]["display_price"]["with_tax"]["formatted"],
-            _image_file_id=product["relationships"].get("main_image", {}).get("data", {}).get("id"),
+            image_file_id=product["relationships"].get("main_image", {}).get("data", {}).get("id"),
         )
         for product in response.json()["data"]
     ]
